@@ -1,19 +1,16 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.30;
 
-import {Script} from "forge-std/Script.sol";
-import {Counter} from "../src/Counter.sol";
+import "forge-std/Script.sol";
+import "../src/MonadToken.sol";
 
-contract CounterScript is Script {
-    Counter public counter;
-
-    function setUp() public {}
-
-    function run() public {
+contract DeployMonad is Script {
+    function run() external returns (MonadToken) {
         vm.startBroadcast();
 
-        counter = new Counter();
+        MonadToken token = new MonadToken();
 
         vm.stopBroadcast();
+        return token;
     }
 }
