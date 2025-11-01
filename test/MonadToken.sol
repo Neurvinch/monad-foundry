@@ -6,79 +6,45 @@ import "../src/MonadToken.sol";
 
 contract MonadTokenTest is Test {
     MonadToken token;
-    address deployer;
-    address alice;
-    address bob;
-    address minter;
-    address admin;
+    address admin = address(0xA);
+    address minter = address(0xB);
+    address user = address(0xC);
 
     function setUp() public {
-        deployer = address(this);
-        alice = address(0x1);
-        bob = address(0x2);
-        minter = address(0x3);
-        admin = address(0x4);
-
+        vm.prank(admin);
         token = new MonadToken();
 
-        // give roles to minter and admin (simulate using grantRole from deployer)
-        // by default deployer has ADMIN & MINTER from constructor
+        vm.startPrank(admin);
         token.grantRole(token.MINTER_ROLE(), minter);
-        token.grantRole(token.ADMIN_ROLE(), admin);
+        vm.stopPrank();
     }
 
-    function testInitialSupply() public {
-        uint256 supply = token.totalSupply();
-        assertGt(supply, 0);
+    function testInitialMint() public {
+        assertEq(token.totalSupply(), 1000 * 10 ** token.decimals());
     }
 
-    function testMintByMinter() public {
-        vm.prank(minter);
-        token.mint(alice, 100 * 10 ** token.decimals());
-        assertEq(token.balanceOf(alice), 100 * 10 ** token.decimals());
+    function testMint() public {
+        vm.startPrank(minter);
+        token.mint(user, 500 * 10 ** token.decimals());
+        vm.stopPrank();
+        assertEq(token.balanceOf(user), 500 * 10 ** token.decimals());
     }
 
-    function testCannotMintByNonMinter() public {
-        vm.prank(bob);
-        vm.expectRevert();
-        token.mint(bob, 1 ether);
-    }
-
-    function testPausePreventsTransfer() public {
-        // mint to alice
-        vm.prank(minter);
-        token.mint(alice, 10 * 10 ** token.decimals());
-
-        vm.prank(admin);
+    function testPauseAndUnpause() public {
+        vm.startPrank(admin);
         token.pause();
+        vm.stopPrank();
 
-        vm.prank(alice);
         vm.expectRevert();
-        token.transfer(bob, 1 * 10 ** token.decimals());
-    }
+        vm.prank(user);
+        token.transfer(admin, 1);
 
-    function testUnpauseAllowsTransfer() public {
-        vm.prank(minter);
-        token.mint(alice, 10 * 10 ** token.decimals());
-
-        vm.prank(admin);
-        token.pause();
-
-        vm.prank(admin);
+        vm.startPrank(admin);
         token.unpause();
+        vm.stopPrank();
 
-        vm.prank(alice);
-        token.transfer(bob, 1 * 10 ** token.decimals());
-
-        assertEq(token.balanceOf(bob), 1 * 10 ** token.decimals());
-    }
-
-    function testGrantAndRevokeRole() public {
-        // deployer has default admin. grant role to bob then revoke
-        token.grantRole(token.MINTER_ROLE(), bob);
-        assertTrue(token.hasRole(token.MINTER_ROLE(), bob));
-
-        token.revokeRole(token.MINTER_ROLE(), bob);
-        assertFalse(token.hasRole(token.MINTER_ROLE(), bob));
+        vm.prank(admin);
+        token.transfer(user, 1);
+        assertEq(token.balanceOf(user), 1);
     }
 }

@@ -5,10 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 
-
 contract MonadToken is ERC20, AccessControl, Pausable {
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     constructor() ERC20("MonadToken", "MONAD") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -29,17 +28,12 @@ contract MonadToken is ERC20, AccessControl, Pausable {
         _mint(to, amount);
     }
 
-    function burn(address from, uint256 amount) public onlyRole(MINTER_ROLE) {
-        // optional: allow minters to burn from an address (requires allowance if not owner)
-        _burn(from, amount);
-    }
-
-    // enforce pause on all transfers/mint/burn
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override whenNotPaused {
-        super._beforeTokenTransfer(from, to, amount);
+    // ✅ New OZ v5 style: use _update with whenNotPaused
+    function _update(address from, address to, uint256 value)
+        internal
+        override
+        whenNotPaused
+    {
+        super._update(from, to, value);
     }
 }
